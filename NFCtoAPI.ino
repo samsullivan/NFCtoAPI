@@ -9,15 +9,17 @@
 
 #define IRQ   (4)
 #define RESET (5)
+#define LED   (13)
 
 Adafruit_NFCShield_I2C nfc(IRQ, RESET);
 uint8_t verifiedUID[] = { 0x47, 0xA1, 0x91, 0x74 };
 
 void setup() 
 {
-  Serial.begin(115200);
-  while (!Serial); // waiting for Leonardo
+  // Initalize LED
+  pinMode(LED, OUTPUT);
 
+  // Initialize NFC
   nfc.begin();
   nfc.setPassiveActivationRetries(0xFF);
   nfc.SAMConfig();
@@ -25,20 +27,26 @@ void setup()
 
 void loop()
 {
+  // Placeholders for reading tag
   uint8_t uid[] = { 0, 0, 0, 0, 0, 0, 0 };
   uint8_t uidLength;
 
+  // Successful tag read
   if (nfc.readPassiveTargetID(PN532_MIFARE_ISO14443A, &uid[0], &uidLength))
   {
-    uint8_t scannedUid[uidLength];
-    for(uint8_t i = 0; i < uidLength; i++) {
-      scannedUid[i] = uid[i];
-    }
-
-    if(memcmp(scannedUid, verifiedUID, sizeof(verifiedUID)) == 0) {
-      Serial.println("Valid tag!");
+    if(memcmp(uid, verifiedUID, sizeof(verifiedUID)) == 0) {
+      // Valid tag
+      digitalWrite(LED, HIGH);
+      delay(3000);
+      digitalWrite(LED, LOW);
     } else {
-      Serial.println("Invalid tag...");
+      // Invalid tag
+      for(int i = 0; i < 3; i++) {
+        digitalWrite(LED, HIGH);
+        delay(100);
+        digitalWrite(LED, LOW);
+        delay(100);
+      }
     }
 
     // Wait 1 second before continuing
